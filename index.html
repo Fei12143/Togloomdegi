@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<title>Runner Bot</title>
+<style>
+  body {
+    margin:0;
+    background:#f4f4f4;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+  }
+  canvas {
+    background:white;
+    border:3px solid #333;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="game" width="800" height="300"></canvas>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+let player = { x:50, y:220, w:30, h:30, vy:0, jump:false };
+let gravity = 0.7;
+let obstacles = [];
+let speed = 5;
+let score = 0;
+let gameOver = false;
+
+document.addEventListener("keydown", e => {
+  if ((e.code === "Space" || e.key.toLowerCase()==="b") && !player.jump) {
+    player.vy = -12;
+    player.jump = true;
+  }
+  if (e.key.toLowerCase()==="r" && gameOver) restart();
+});
+
+function spawnObstacle() {
+  obstacles.push({ x: canvas.width, y:230, w:20, h:20 });
+}
+
+setInterval(spawnObstacle, 1500);
+
+function update() {
+  if (gameOver) return;
+
+  // Player physics
+  player.vy += gravity;
+  player.y += player.vy;
+
+  if (player.y + player.h >= 250) {
+    player.y = 250 - player.h;
+    player.vy = 0;
+    player.jump = false;
+  }
+
+  // Obstacles
+  obstacles.forEach(o => o.x -= speed);
+  obstacles = obstacles.filter(o => o.x + o.w > 0);
+
+  // Collision
+  obstacles.forEach(o => {
+    if (
+      player.x < o.x + o.w &&
+      player.x + player.w > o.x &&
+      player.y < o.y + o.h &&
+      player.y + player.h > o.y
+    ) {
+      gameOver = true;
+    }
+  });
+
+  score++;
+}
+
+function draw() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  // ground
+  ctx.fillStyle = "#ddd";
+  ctx.fillRect(0,250,canvas.width,5);
+
+  // player (robot)
+  ctx.fillStyle = "#0077ff";
+  ctx.fillRect(player.x, player.y, player.w, player.h);
+  ctx.fillStyle = "white";
+  ctx.fillRect(player.x+6, player.y+6, 6, 6);
+  ctx.fillRect(player.x+18, player.y+6, 6, 6);
+
+  // obstacles
+  ctx.fillStyle = "#ff4444";
+  obstacles.forEach(o => ctx.fillRect(o.x, o.y, o.w, o.h));
+
+  // score
+  ctx.fillStyle = "#000";
+  ctx.fillText("Score: " + score, 10, 20);
+
+  if (gameOver) {
+    ctx.fillStyle = "black";
+    ctx.font = "30px Arial";
+    ctx.fillText("GAME OVER", 300, 150);
+    ctx.font = "16px Arial";
+    ctx.fillText("Press R to Restart", 320, 180);
+  }
+}
+
+function loop() {
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+
+function restart() {
+  obstacles = [];
+  score = 0;
+  player.y = 220;
+  player.vy = 0;
+  gameOver = false;
+}
+
+loop();
+</script>
+</body>
+</html>
